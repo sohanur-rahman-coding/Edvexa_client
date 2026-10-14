@@ -1,164 +1,101 @@
+import React from "react";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  Mail,
-  Phone,
-  MapPin,
-} from "lucide-react";
-import { FaFacebook } from "react-icons/fa";
-import { BsInstagram, BsTwitter } from "react-icons/bs";
-import { LiaLinkedin } from "react-icons/lia";
+import { Mail, Phone, MapPin, ShieldCheck, Zap, Lock, Package } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t bg-background">
-      <div className="container mx-auto px-4">
-        <div className="grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div>
-            <Link href="/" className="inline-block">
-              <Image
-                src="/logo-xl.png"
-                alt="Logo"
-                width={180}
-                height={50}
-                className="h-12 w-auto"
-              />
-            </Link>
-
-            <p className="mt-4 text-sm text-muted-foreground">
-              Discover quality products at great prices. Fast delivery,
-              secure payments, and exceptional customer service.
+    <footer className="mt-20 border-t border-slate-800 bg-slate-950 text-slate-400">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand & Mission */}
+          <div className="space-y-3 md:col-span-1">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-base shadow-md shadow-indigo-500/20">
+                E
+              </div>
+              <span className="text-lg font-bold text-white tracking-tight">Edvexa</span>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Full-Stack E-Commerce Order & Inventory Management Platform engineered for high concurrency, zero overselling, and idempotent transaction processing.
             </p>
-
-            <div className="mt-5 flex items-center gap-3">
-              <Link
-                href="#"
-                className="rounded-full border p-2 transition hover:bg-muted"
-              >
-                <FaFacebook className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#"
-                className="rounded-full border p-2 transition hover:bg-muted"
-              >
-                <BsInstagram className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#"
-                className="rounded-full border p-2 transition hover:bg-muted"
-              >
-                <BsTwitter className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#"
-                className="rounded-full border p-2 transition hover:bg-muted"
-              >
-                <LiaLinkedin className="h-4 w-4" />
-              </Link>
-            </div>
           </div>
 
-          {/* Shop */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider">
-              Shop
-            </h3>
-
-            <ul className="space-y-3 text-sm text-muted-foreground">
+          {/* Quick Links */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Platform Navigation
+            </h4>
+            <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/products" className="hover:text-foreground">
-                  All Products
+                <Link href="/" className="hover:text-indigo-400 transition-colors">
+                  Product Catalog
                 </Link>
               </li>
               <li>
-                <Link href="/categories" className="hover:text-foreground">
-                  Categories
+                <Link href="/cart" className="hover:text-indigo-400 transition-colors">
+                  Shopping Cart
                 </Link>
               </li>
               <li>
-                <Link href="/new-arrivals" className="hover:text-foreground">
-                  New Arrivals
+                <Link href="/orders" className="hover:text-indigo-400 transition-colors">
+                  My Orders & Lifecycle Tracker
                 </Link>
               </li>
               <li>
-                <Link href="/best-selling" className="hover:text-foreground">
-                  Best Selling
+                <Link href="/admin" className="hover:text-indigo-400 transition-colors">
+                  Admin Dashboard
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Support */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider">
-              Support
-            </h3>
-
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li>
-                <Link href="/contact" className="hover:text-foreground">
-                  Contact Us
-                </Link>
+          {/* Core Architecture */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Reliability Standards
+            </h4>
+            <ul className="space-y-2 text-xs">
+              <li className="flex items-center gap-2 text-slate-400">
+                <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Atomic MongoDB Concurrency</span>
               </li>
-              <li>
-                <Link href="/faq" className="hover:text-foreground">
-                  FAQ
-                </Link>
+              <li className="flex items-center gap-2 text-slate-400">
+                <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Idempotency-Key Deduplication</span>
               </li>
-              <li>
-                <Link href="/privacy-policy" className="hover:text-foreground">
-                  Privacy Policy
-                </Link>
+              <li className="flex items-center gap-2 text-slate-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span>JWT Role-Based Access Control</span>
               </li>
-              <li>
-                <Link href="/terms" className="hover:text-foreground">
-                  Terms & Conditions
-                </Link>
+              <li className="flex items-center gap-2 text-slate-400">
+                <Package className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Automated Inventory Restoration</span>
               </li>
             </ul>
           </div>
 
-          {/* Contact */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider">
-              Contact
-            </h3>
-
-            <div className="space-y-4 text-sm text-muted-foreground">
-              <div className="flex gap-3">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>Dhaka, Bangladesh</span>
-              </div>
-
-              <div className="flex gap-3">
-                <Phone className="h-4 w-4 shrink-0" />
-                <span>+880 1234-567890</span>
-              </div>
-
-              <div className="flex gap-3">
-                <Mail className="h-4 w-4 shrink-0" />
-                <span>support@example.com</span>
-              </div>
-            </div>
+          {/* Contact / Support */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Candidate Submission
+            </h4>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Software Engineer Intern Assignment submitted to Edvexa Recruitment.
+            </p>
+            <p className="text-xs text-slate-400">
+              Inquiries: <span className="text-indigo-400">career@edvexa.courses</span>
+            </p>
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-3 border-t py-6 text-center text-sm text-muted-foreground md:flex-row">
-          <p>
-            © {new Date().getFullYear()} Your Store. All rights reserved.
-          </p>
-
+        <div className="mt-8 pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+          <p>© {new Date().getFullYear()} Edvexa Platform. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <Link href="/privacy-policy" className="hover:text-foreground">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-foreground">
-              Terms
-            </Link>
-            <Link href="/cookies" className="hover:text-foreground">
-              Cookies
-            </Link>
+            <span>Node.js / Express</span>
+            <span>•</span>
+            <span>Next.js / React</span>
+            <span>•</span>
+            <span>MongoDB Atlas</span>
           </div>
         </div>
       </div>
