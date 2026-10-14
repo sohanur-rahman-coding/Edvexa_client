@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
         <p className="text-sm text-slate-400">{error || "The requested product does not exist."}</p>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Catalog
         </Link>
@@ -94,7 +94,7 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     const success = addToCart(product, quantity);
     if (success) {
-      router.push("/cart");
+      window.location.href = "/cart";
     }
   };
 
@@ -103,7 +103,7 @@ export default function ProductDetailPage() {
       {/* Breadcrumb navigation */}
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Catalog
       </Link>
@@ -178,7 +178,7 @@ export default function ProductDetailPage() {
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1}
-                    className="p-2.5 text-slate-400 hover:text-white disabled:opacity-40 transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
@@ -188,7 +188,7 @@ export default function ProductDetailPage() {
                   <button
                     onClick={() => setQuantity((q) => Math.min(remainingStock, q + 1))}
                     disabled={quantity >= remainingStock}
-                    className="p-2.5 text-slate-400 hover:text-white disabled:opacity-40 transition-colors"
+                    className="p-2.5 text-slate-400 hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -201,14 +201,14 @@ export default function ProductDetailPage() {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={handleAddToCart}
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 transition-all shadow-md active:scale-95"
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   Add to Cart
                 </button>
                 <button
                   onClick={handleBuyNow}
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 transition-all active:scale-95"
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 transition-all active:scale-95 cursor-pointer"
                 >
                   Buy Now
                 </button>
@@ -221,7 +221,7 @@ export default function ProductDetailPage() {
               </p>
               <Link
                 href="/cart"
-                className="inline-block text-xs text-indigo-400 hover:underline font-medium"
+                className="inline-block text-xs text-indigo-400 hover:underline font-medium cursor-pointer"
               >
                 Go to Cart to complete checkout
               </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -24,10 +24,24 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setUserDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const navLinks = [
     { name: "Catalog", href: "/", icon: Layers },
-    ...(isAuthenticated ? [{ name: "My Orders", href: "/orders", icon: Package }] : []),
+    { name: "My Orders", href: "/orders", icon: Package },
     ...(isAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: ShieldCheck, badge: "Admin" }] : []),
   ];
 
@@ -53,7 +67,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" className="flex items-center gap-3 group cursor-pointer">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-200">
               E
             </div>
@@ -79,7 +93,7 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     isActive
                       ? "bg-slate-800 text-white shadow-sm"
                       : "text-slate-300 hover:text-white hover:bg-slate-900"
@@ -102,7 +116,7 @@ export default function Navbar() {
             {/* Shopping Cart Button */}
             <Link
               href="/cart"
-              className="relative p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 text-slate-200 hover:text-white transition-all shadow-sm"
+              className="relative p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 text-slate-200 hover:text-white transition-all shadow-sm cursor-pointer"
               title="Shopping Cart"
             >
               <ShoppingBag className="w-5 h-5" />
@@ -115,10 +129,11 @@ export default function Navbar() {
 
             {/* Authenticated User Menu or Login Actions */}
             {isAuthenticated ? (
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
+                  type="button"
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-200 transition-all text-left"
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-200 transition-all text-left cursor-pointer"
                 >
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
                     {user?.name ? user.name.charAt(0) : "U"}
@@ -136,10 +151,7 @@ export default function Navbar() {
 
                 {/* Dropdown Menu */}
                 {userDropdownOpen && (
-                  <div
-                    onMouseLeave={() => setUserDropdownOpen(false)}
-                    className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100"
-                  >
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
                     <div className="px-3 py-2 border-b border-slate-800 mb-1">
                       <p className="text-xs font-semibold text-white truncate">
                         {user?.name}
@@ -155,7 +167,7 @@ export default function Navbar() {
                     <Link
                       href="/orders"
                       onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
                     >
                       <Package className="w-4 h-4 text-indigo-400" />
                       My Orders
@@ -165,7 +177,7 @@ export default function Navbar() {
                       <Link
                         href="/admin"
                         onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-indigo-300 hover:text-white hover:bg-indigo-950/50 rounded-lg transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-indigo-300 hover:text-white hover:bg-indigo-950/50 rounded-lg transition-colors cursor-pointer"
                       >
                         <ShieldCheck className="w-4 h-4 text-indigo-400" />
                         Admin Dashboard
@@ -173,11 +185,12 @@ export default function Navbar() {
                     )}
 
                     <button
+                      type="button"
                       onClick={() => {
                         setUserDropdownOpen(false);
                         logout();
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors mt-1 border-t border-slate-800/50 pt-2"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors mt-1 border-t border-slate-800/50 pt-2 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -189,13 +202,13 @@ export default function Navbar() {
               <div className="hidden sm:flex items-center gap-2">
                 <Link
                   href="/signin"
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white rounded-lg hover:bg-slate-900 transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm shadow-indigo-500/25 transition-all"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm shadow-indigo-500/25 transition-all cursor-pointer"
                 >
                   Register
                 </Link>
@@ -205,7 +218,7 @@ export default function Navbar() {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 md:hidden"
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 md:hidden cursor-pointer"
               aria-label="Toggle Navigation"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -225,7 +238,7 @@ export default function Navbar() {
                 key={link.name}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between p-2.5 rounded-lg text-sm font-medium ${
+                className={`flex items-center justify-between p-2.5 rounded-lg text-sm font-medium cursor-pointer ${
                   isActive ? "bg-slate-800 text-white" : "text-slate-300"
                 }`}
               >
@@ -247,14 +260,14 @@ export default function Navbar() {
               <Link
                 href="/signin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg bg-slate-900"
+                className="w-full text-center py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg bg-slate-900 cursor-pointer"
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg"
+                className="w-full text-center py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg cursor-pointer"
               >
                 Register Account
               </Link>

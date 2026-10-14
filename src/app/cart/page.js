@@ -56,7 +56,7 @@ export default function CartPage() {
 
     if (!isAuthenticated) {
       toast.error("Please sign in or register to place your order.");
-      router.push("/signin?redirect=/cart");
+      window.location.href = "/signin?redirect=/cart";
       return;
     }
 
@@ -96,7 +96,7 @@ export default function CartPage() {
 
         toast.success("Order placed successfully! Inventory reserved.");
         clearCart();
-        router.push("/orders");
+        window.location.href = "/orders";
       }
     } catch (err) {
       toast.error(err.message || "Checkout failed. Please check stock availability.");

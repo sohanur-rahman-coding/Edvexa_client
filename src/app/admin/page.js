@@ -50,9 +50,10 @@ export default function AdminDashboardPage() {
     imageUrl: "",
   });
 
-  // Adjust stock state
+  // Action states
+  const [deletingProductId, setDeletingProductId] = useState(null);
   const [adjustingStockId, setAdjustingStockId] = useState(null);
-  const [adjustStockAmount, setAdjustStockAmount] = useState(5);
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,7 +84,7 @@ export default function AdminDashboardPage() {
     if (!authLoading) {
       if (!isAdmin) {
         toast.error("Access restricted: Administrator role required.");
-        router.push("/signin?redirect=/admin");
+        window.location.href = "/signin?redirect=/admin";
       } else {
         fetchData();
       }
@@ -94,12 +95,21 @@ export default function AdminDashboardPage() {
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        title: productForm.title.trim(),
+        description: productForm.description.trim(),
+        price: parseFloat(productForm.price),
+        stock: parseInt(productForm.stock, 10),
+        category: productForm.category.trim(),
+        imageUrl: productForm.imageUrl.trim() || undefined,
+      };
+
       if (editingProduct) {
-        await api.products.update(editingProduct.id, productForm);
-        toast.success("Product updated successfully!");
+        await api.products.update(editingProduct.id, payload);
+        toast.success(`"${payload.title}" updated successfully!`);
       } else {
-        await api.products.create(productForm);
-        toast.success("New product created successfully!");
+        await api.products.create(payload);
+        toast.success(`"${payload.title}" created successfully!`);
       }
       setIsProductModalOpen(false);
       setEditingProduct(null);
@@ -117,11 +127,21 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteProduct = async (id, title) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+  const handleDeleteClick = async (productId, title) => {
+    // 2-step click confirmation
+    if (deletingProductId !== productId) {
+      setDeletingProductId(productId);
+      toast(`Click again to confirm deleting "${title}"`, { icon: "⚠️", duration: 4000 });
+      setTimeout(() => {
+        setDeletingProductId((prev) => (prev === productId ? null : prev));
+      }, 5000);
+      return;
+    }
+
+    setDeletingProductId(null);
     try {
-      await api.products.delete(id);
-      toast.success("Product deleted successfully");
+      await api.products.delete(productId);
+      toast.success(`"${title}" deleted successfully`);
       fetchData();
     } catch (err) {
       toast.error(err.message || "Failed to delete product");
@@ -130,23 +150,31 @@ export default function AdminDashboardPage() {
 
   // Handle Stock Quick Adjust
   const handleAdjustStock = async (productId, operation, amount) => {
+    setAdjustingStockId(productId);
     try {
-      await api.inventory.adjustStock(productId, operation, amount);
-      toast.success("Stock level updated successfully!");
-      fetchData();
+      const res = await api.inventory.adjustStock(productId, operation, amount);
+      if (res?.success) {
+        toast.success(res.message || "Stock level updated!");
+        fetchData();
+      }
     } catch (err) {
       toast.error(err.message || "Failed to update stock");
+    } finally {
+      setAdjustingStockId(null);
     }
   };
 
   // Handle Order Lifecycle Progression
   const handleAdvanceOrderStatus = async (orderId, nextStatus) => {
+    setUpdatingOrderId(orderId);
     try {
       await api.orders.updateStatus(orderId, nextStatus, `Status updated to ${nextStatus} by Admin.`);
       toast.success(`Order advanced to "${nextStatus}"!`);
       fetchData();
     } catch (err) {
       toast.error(err.message || "Failed to advance order status");
+    } finally {
+      setUpdatingOrderId(null);
     }
   };
 
@@ -184,7 +212,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={fetchData}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-800 hover:bg-slate-900 text-slate-300 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-800 hover:bg-slate-900 text-slate-300 transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
@@ -201,7 +229,7 @@ export default function AdminDashboardPage() {
               });
               setIsProductModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add Product
           </button>
@@ -268,7 +296,7 @@ export default function AdminDashboardPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 isActive
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
@@ -329,22 +357,24 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleAdjustStock(p.id, "decrement", 1)}
-                            disabled={p.stock <= 0}
-                            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 disabled:opacity-30"
+                            disabled={p.stock <= 0 || adjustingStockId === p.id}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 disabled:opacity-30 cursor-pointer transition-colors"
                             title="Decrement stock by 1"
                           >
                             -1
                           </button>
                           <button
                             onClick={() => handleAdjustStock(p.id, "increment", 5)}
-                            className="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold"
+                            disabled={adjustingStockId === p.id}
+                            className="px-3 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/30 text-xs font-bold cursor-pointer transition-colors"
                             title="Restock +5 units"
                           >
                             +5 Restock
                           </button>
                           <button
                             onClick={() => handleAdjustStock(p.id, "increment", 20)}
-                            className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold"
+                            disabled={adjustingStockId === p.id}
+                            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm shadow-indigo-500/20 cursor-pointer transition-colors"
                             title="Restock +20 units"
                           >
                             +20 Restock
@@ -364,57 +394,64 @@ export default function AdminDashboardPage() {
       {activeTab === "products" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {inventoryProducts.map((p) => (
-              <div
-                key={p.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase text-indigo-400">
-                      {p.category}
+            {inventoryProducts.map((p) => {
+              const isConfirmingDelete = deletingProductId === p.id;
+              return (
+                <div
+                  key={p.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase text-indigo-400">
+                        {p.category}
+                      </span>
+                      <h4 className="text-sm font-bold text-white line-clamp-1">
+                        {p.title}
+                      </h4>
+                    </div>
+                    <span className="text-xs font-bold text-white">
+                      ${Number(p.price).toFixed(2)}
                     </span>
-                    <h4 className="text-sm font-bold text-white line-clamp-1">
-                      {p.title}
-                    </h4>
                   </div>
-                  <span className="text-xs font-bold text-white">
-                    ${Number(p.price).toFixed(2)}
-                  </span>
-                </div>
 
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/80">
-                  <span>Stock: <strong>{p.stock}</strong></span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingProduct(p);
-                        setProductForm({
-                          title: p.title,
-                          description: p.description || "",
-                          price: p.price,
-                          stock: p.stock,
-                          category: p.category,
-                          imageUrl: p.imageUrl || "",
-                        });
-                        setIsProductModalOpen(true);
-                      }}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
-                      title="Edit Product"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProduct(p.id, p.title)}
-                      className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400"
-                      title="Delete Product"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/80">
+                    <span>Stock: <strong>{p.stock}</strong></span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingProduct(p);
+                          setProductForm({
+                            title: p.title,
+                            description: p.description || "",
+                            price: p.price,
+                            stock: p.stock,
+                            category: p.category,
+                            imageUrl: p.imageUrl || "",
+                          });
+                          setIsProductModalOpen(true);
+                        }}
+                        className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer transition-colors"
+                        title="Edit Product"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(p.id, p.title)}
+                        className={`p-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                          isConfirmingDelete
+                            ? "bg-rose-600 text-white animate-pulse"
+                            : "bg-rose-950/40 hover:bg-rose-900/60 text-rose-400"
+                        }`}
+                        title="Delete Product"
+                      >
+                        {isConfirmingDelete ? "Confirm Delete?" : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -436,85 +473,92 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {ordersData.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-white block">
-                          #{order.id.slice(-6).toUpperCase()}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-semibold text-white block">
-                          {order.customerName}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {order.customerEmail}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-300">
-                        {order.items?.length} product(s)
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-white">
-                        ${Number(order.pricing?.total || 0).toFixed(2)}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            order.status === "Delivered"
-                              ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30"
-                              : order.status === "Shipped"
-                              ? "bg-sky-950 text-sky-400 border border-sky-500/30"
-                              : order.status === "Confirmed"
-                              ? "bg-indigo-950 text-indigo-400 border border-indigo-500/30"
-                              : order.status === "Cancelled"
-                              ? "bg-rose-950 text-rose-400 border border-rose-500/30"
-                              : "bg-amber-950 text-amber-300 border border-amber-500/30"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {order.status === "Pending" && (
-                            <button
-                              onClick={() => handleAdvanceOrderStatus(order.id, "Confirmed")}
-                              className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px]"
-                            >
-                              Confirm
-                            </button>
-                          )}
-                          {order.status === "Confirmed" && (
-                            <button
-                              onClick={() => handleAdvanceOrderStatus(order.id, "Shipped")}
-                              className="px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px]"
-                            >
-                              Ship
-                            </button>
-                          )}
-                          {order.status === "Shipped" && (
-                            <button
-                              onClick={() => handleAdvanceOrderStatus(order.id, "Delivered")}
-                              className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px]"
-                            >
-                              Mark Delivered
-                            </button>
-                          )}
-                          {["Pending", "Confirmed"].includes(order.status) && (
-                            <button
-                              onClick={() => handleAdvanceOrderStatus(order.id, "Cancelled")}
-                              className="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-500/30 font-bold text-[10px]"
-                            >
-                              Cancel & Restock
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {ordersData.map((order) => {
+                    const isBusy = updatingOrderId === order.id;
+                    return (
+                      <tr key={order.id} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-white block">
+                            #{order.id.slice(-6).toUpperCase()}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-semibold text-white block">
+                            {order.customerName}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {order.customerEmail}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-300">
+                          {order.items?.length} product(s)
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-white">
+                          ${Number(order.pricing?.total || 0).toFixed(2)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              order.status === "Delivered"
+                                ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30"
+                                : order.status === "Shipped"
+                                ? "bg-sky-950 text-sky-400 border border-sky-500/30"
+                                : order.status === "Confirmed"
+                                ? "bg-indigo-950 text-indigo-400 border border-indigo-500/30"
+                                : order.status === "Cancelled"
+                                ? "bg-rose-950 text-rose-400 border border-rose-500/30"
+                                : "bg-amber-950 text-amber-300 border border-amber-500/30"
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {order.status === "Pending" && (
+                              <button
+                                onClick={() => handleAdvanceOrderStatus(order.id, "Confirmed")}
+                                disabled={isBusy}
+                                className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] cursor-pointer shadow-sm transition-all"
+                              >
+                                {isBusy ? "Updating..." : "Confirm"}
+                              </button>
+                            )}
+                            {order.status === "Confirmed" && (
+                              <button
+                                onClick={() => handleAdvanceOrderStatus(order.id, "Shipped")}
+                                disabled={isBusy}
+                                className="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] cursor-pointer shadow-sm transition-all"
+                              >
+                                {isBusy ? "Updating..." : "Ship"}
+                              </button>
+                            )}
+                            {order.status === "Shipped" && (
+                              <button
+                                onClick={() => handleAdvanceOrderStatus(order.id, "Delivered")}
+                                disabled={isBusy}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] cursor-pointer shadow-sm transition-all"
+                              >
+                                {isBusy ? "Updating..." : "Mark Delivered"}
+                              </button>
+                            )}
+                            {["Pending", "Confirmed"].includes(order.status) && (
+                              <button
+                                onClick={() => handleAdvanceOrderStatus(order.id, "Cancelled")}
+                                disabled={isBusy}
+                                className="px-2.5 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-500/30 font-bold text-[10px] cursor-pointer transition-all"
+                              >
+                                {isBusy ? "Restoring..." : "Cancel & Restock"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -531,8 +575,9 @@ export default function AdminDashboardPage() {
                 {editingProduct ? "Edit Product" : "Create New Product"}
               </h3>
               <button
+                type="button"
                 onClick={() => setIsProductModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white cursor-pointer p-1"
               >
                 ✕
               </button>
@@ -599,7 +644,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-950 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-800 bg-slate-950 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <option value="Laptops">Laptops</option>
                     <option value="Audio">Audio</option>
@@ -628,13 +673,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20 cursor-pointer"
                 >
                   {editingProduct ? "Save Changes" : "Create Product"}
                 </button>

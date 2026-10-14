@@ -128,7 +128,7 @@ export default function Home() {
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white cursor-pointer"
               >
                 Clear
               </button>
@@ -143,7 +143,7 @@ export default function Home() {
                 type="checkbox"
                 checked={inStockOnly}
                 onChange={(e) => setInStockOnly(e.target.checked)}
-                className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-800 h-3.5 w-3.5"
+                className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-800 h-3.5 w-3.5 cursor-pointer"
               />
               <span>In-Stock Only</span>
             </label>
@@ -180,7 +180,7 @@ export default function Home() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           <button
             onClick={() => setSelectedCategory("all")}
-            className={`px-4 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+            className={`px-4 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
               selectedCategory === "all"
                 ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                 : "bg-slate-900/70 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
@@ -192,7 +192,7 @@ export default function Home() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === cat
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                   : "bg-slate-900/70 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"

@@ -17,6 +17,7 @@ import {
   RotateCcw,
   ArrowRight,
   ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 
 export default function OrdersPage() {
@@ -25,6 +26,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [confirmCancelId, setConfirmCancelId] = useState(null); // 2-step confirmation state
 
   const fetchOrders = async () => {
     try {
@@ -50,16 +52,28 @@ export default function OrdersPage() {
     }
   }, [authLoading, isAuthenticated]);
 
-  const handleCancelOrder = async (orderId) => {
-    if (!confirm("Are you sure you want to cancel this order? All items will be restored to stock.")) {
+  const handleCancelClick = async (orderId) => {
+    // If not in confirmation state yet, request confirmation
+    if (confirmCancelId !== orderId) {
+      setConfirmCancelId(orderId);
+      toast("Click again to confirm order cancellation.", {
+        icon: "⚠️",
+        duration: 4000,
+      });
+      // Auto-revert after 5 seconds if not clicked
+      setTimeout(() => {
+        setConfirmCancelId((prev) => (prev === orderId ? null : prev));
+      }, 5000);
       return;
     }
 
+    // Second click: execute cancellation
+    setConfirmCancelId(null);
     setCancellingOrderId(orderId);
     try {
       const res = await api.orders.cancel(orderId, "Customer requested order cancellation.");
       if (res?.success) {
-        toast.success("Order cancelled and product inventory successfully restored!");
+        toast.success("Order cancelled! Product inventory has been restored to stock.");
         fetchOrders(); // Refresh orders list
       }
     } catch (err) {
@@ -100,8 +114,9 @@ export default function OrdersPage() {
         </div>
         <button
           onClick={fetchOrders}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-300 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-300 transition-colors cursor-pointer"
         >
+          <RefreshCw className="w-3.5 h-3.5" />
           Refresh Orders
         </button>
       </div>
@@ -117,7 +132,7 @@ export default function OrdersPage() {
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
           >
             Explore Catalog
           </Link>
@@ -128,6 +143,7 @@ export default function OrdersPage() {
             const currentStep = getLifecycleStep(order.status);
             const isCancelled = order.status === "Cancelled";
             const canCancel = ["Pending", "Confirmed"].includes(order.status);
+            const isConfirming = confirmCancelId === order.id;
 
             return (
               <div
@@ -163,11 +179,19 @@ export default function OrdersPage() {
 
                     {canCancel && (
                       <button
-                        onClick={() => handleCancelOrder(order.id)}
+                        onClick={() => handleCancelClick(order.id)}
                         disabled={cancellingOrderId === order.id}
-                        className="px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold transition-all disabled:opacity-50"
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer ${
+                          isConfirming
+                            ? "bg-rose-600 text-white animate-pulse border border-rose-500 shadow-md shadow-rose-600/30"
+                            : "border border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300"
+                        }`}
                       >
-                        {cancellingOrderId === order.id ? "Cancelling..." : "Cancel Order"}
+                        {cancellingOrderId === order.id
+                          ? "Restoring Stock..."
+                          : isConfirming
+                          ? "Confirm Cancel?"
+                          : "Cancel Order"}
                       </button>
                     )}
                   </div>
@@ -177,7 +201,7 @@ export default function OrdersPage() {
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80">
                   {isCancelled ? (
                     <div className="flex items-center gap-3 text-rose-400">
-                      <XCircle className="w-5 h-5" />
+                      <XCircle className="w-5 h-5 shrink-0" />
                       <div>
                         <span className="text-xs font-bold block">Order Cancelled</span>
                         <span className="text-[11px] text-slate-400">

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { toast } from "react-hot-toast";
 import { ShoppingBag, Eye, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 export default function ProductCard({ product }) {
@@ -15,10 +16,28 @@ export default function ProductCard({ product }) {
   const isOutOfStock = product.stock <= 0;
   const isCartStockMaxed = remainingStock === 0 && !isOutOfStock;
 
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+    if (isOutOfStock) {
+      toast.error(`"${product.title}" is currently out of stock. Check back soon!`, {
+        icon: "⚠️",
+      });
+      return;
+    }
+    if (isCartStockMaxed) {
+      toast(
+        `All available units (${product.stock}) are already in your cart. Visit your cart to complete your order!`,
+        { icon: "🛒" }
+      );
+      return;
+    }
+    addToCart(product, 1);
+  };
+
   return (
     <div className="group relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/80 hover:border-slate-700 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-indigo-500/10">
       {/* Product Image Container */}
-      <div className="relative aspect-square w-full overflow-hidden bg-slate-950">
+      <Link href={`/products/${product.id}`} className="relative aspect-square w-full overflow-hidden bg-slate-950 block cursor-pointer">
         <img
           src={product.imageUrl}
           alt={product.title}
@@ -27,7 +46,7 @@ export default function ProductCard({ product }) {
         />
 
         {/* Live Stock Status Overlay Badge */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
           {product.stock > 10 ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -47,12 +66,12 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Category Tag */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 pointer-events-none">
           <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-slate-900/80 text-slate-300 border border-slate-700 backdrop-blur-md">
             {product.category}
           </span>
         </div>
-      </div>
+      </Link>
 
       {/* Product Content */}
       <div className="flex flex-1 flex-col p-5">
@@ -78,20 +97,19 @@ export default function ProductCard({ product }) {
           <div className="flex items-center gap-2">
             <Link
               href={`/products/${product.id}`}
-              className="p-2 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
+              className="p-2 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white transition-all cursor-pointer"
               title="View Product Details"
             >
               <Eye className="w-4 h-4" />
             </Link>
 
             <button
-              onClick={() => addToCart(product, 1)}
-              disabled={isOutOfStock || isCartStockMaxed}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shadow-md ${
+              onClick={handleButtonClick}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all shadow-md cursor-pointer ${
                 isOutOfStock
-                  ? "bg-slate-800/60 text-slate-500 cursor-not-allowed border border-slate-800"
+                  ? "bg-slate-800/60 text-slate-400 border border-slate-800 hover:bg-slate-800"
                   : isCartStockMaxed
-                  ? "bg-amber-950/40 text-amber-300 border border-amber-500/30 cursor-not-allowed"
+                  ? "bg-amber-950/40 text-amber-300 border border-amber-500/30 hover:bg-amber-900/50"
                   : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 active:scale-95"
               }`}
             >
@@ -100,7 +118,7 @@ export default function ProductCard({ product }) {
                 ? "Sold Out"
                 : isCartStockMaxed
                 ? "In Cart (Max)"
-                : "Add"}
+                : "Add to Cart"}
             </button>
           </div>
         </div>
