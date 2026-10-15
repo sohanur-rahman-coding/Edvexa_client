@@ -21,6 +21,8 @@ import {
   Package,
   Star,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export default function Home() {
@@ -34,6 +36,12 @@ export default function Home() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 8;
+
   useEffect(() => {
     async function fetchCategories() {
       try {
@@ -46,6 +54,11 @@ export default function Home() {
     fetchCategories();
   }, []);
 
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedCategory, inStockOnly, sortBy]);
+
   useEffect(() => {
     let isMounted = true;
     async function loadProducts() {
@@ -56,10 +69,15 @@ export default function Home() {
           category: selectedCategory !== "all" ? selectedCategory : undefined,
           inStock: inStockOnly ? "true" : undefined,
           sortBy,
-          limit: 50,
+          page,
+          limit,
         };
         const res = await api.products.getAll(params);
-        if (isMounted && res?.success && res.data) setProducts(res.data);
+        if (isMounted && res?.success && res.data) {
+          setProducts(res.data);
+          if (res.total !== undefined) setTotal(res.total);
+          if (res.totalPages !== undefined) setTotalPages(res.totalPages);
+        }
       } catch (err) {
         console.error("Failed to load products:", err);
       } finally {
@@ -68,7 +86,7 @@ export default function Home() {
     }
     const timer = setTimeout(loadProducts, 250);
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [search, selectedCategory, inStockOnly, sortBy]);
+  }, [search, selectedCategory, inStockOnly, sortBy, page]);
 
   const features = [
     {
@@ -217,7 +235,7 @@ export default function Home() {
       </section>
 
       {/* ─── Product Catalog Section ─── */}
-      <section className="space-y-5">
+      <section id="catalog-section" className="space-y-5">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
           <div>
@@ -315,11 +333,65 @@ export default function Home() {
             ))}
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200">
+                <p className="text-xs text-slate-500 font-medium">
+                  Showing <span className="font-bold text-slate-800">{(page - 1) * limit + 1}</span> to{" "}
+                  <span className="font-bold text-slate-800">{Math.min(page * limit, total)}</span> of{" "}
+                  <span className="font-bold text-slate-800">{total}</span> products
+                </p>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.max(1, p - 1));
+                      document.getElementById("catalog-section")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    disabled={page === 1}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => {
+                        setPage(num);
+                        document.getElementById("catalog-section")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        page === num
+                          ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-extrabold"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-xs"
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.min(totalPages, p + 1));
+                      document.getElementById("catalog-section")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    disabled={page === totalPages}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
+                  >
+                    Next <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20 px-4 rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto mb-4">

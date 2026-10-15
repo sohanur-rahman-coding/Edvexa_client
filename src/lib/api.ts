@@ -5,12 +5,18 @@
 
 import { ApiResponse, Product, Order, User, InventoryStats, OrderStats } from "@/types";
 
-const rawBase =
-  process.env.NEXT_PUBLIC_SERVER_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
-
-const API_BASE_URL = rawBase.replace(/\/+$/, "").replace(/\/api$/, "");
+const getBaseUrl = (): string => {
+  const rawBase =
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "";
+  if (!rawBase) {
+    // In browser, relative URL proxies through Next.js rewrites
+    // In server-side rendering, default to localhost
+    return typeof window === "undefined" ? "http://localhost:5000" : "";
+  }
+  return rawBase.replace(/\/+$/, "").replace(/\/api$/, "");
+};
 
 function getAuthHeader(): Record<string, string> {
   if (typeof window === "undefined") return {};
@@ -22,7 +28,8 @@ async function request<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...getAuthHeader(),

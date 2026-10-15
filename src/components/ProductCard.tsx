@@ -14,12 +14,17 @@ import {
   Check,
 } from "lucide-react";
 
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, items } = useCart();
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
   const [imgError, setImgError] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -34,6 +39,16 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
+    // Security check: require login to add items to cart
+    if (!isAuthenticated) {
+      toast.error("🔒 Please sign in to add products to your cart!", {
+        id: "auth-cart-warning",
+        duration: 3500,
+      });
+      router.push("/signin?redirect=/products");
+      return;
+    }
+
     if (isOutOfStock) {
       toast.error(`"${product.title}" is sold out.`, { icon: "⚠️" });
       return;
@@ -44,12 +59,16 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
 
     setIsAdding(true);
-    addToCart(product, 1);
-    setTimeout(() => {
+    const added = addToCart(product, 1);
+    if (added) {
+      setTimeout(() => {
+        setIsAdding(false);
+        setJustAdded(true);
+        setTimeout(() => setJustAdded(false), 1500);
+      }, 350);
+    } else {
       setIsAdding(false);
-      setJustAdded(true);
-      setTimeout(() => setJustAdded(false), 1500);
-    }, 350);
+    }
   };
 
   const stockRatio = Math.min(100, Math.max(0, (product.stock / 20) * 100));

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, CartItem } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 
 interface CartContextItem extends CartItem {
@@ -21,30 +22,53 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
   const [items, setItems] = useState<CartContextItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // Restore cart from localStorage on mount
+  // User-scoped storage key prevents cart leaks across unauthenticated or different users
+  const storageKey = user?.id ? `edvexa_cart_${user.id}` : null;
+
+  // Sync cart when authentication state or active user changes
   useEffect(() => {
+    if (!isAuthenticated || !storageKey) {
+      // Clear memory cart when unauthenticated
+      setItems([]);
+      setMounted(true);
+      return;
+    }
+
     try {
-      const stored = localStorage.getItem("edvexa_cart");
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         setItems(JSON.parse(stored));
+      } else {
+        setItems([]);
       }
     } catch (e) {
-      console.warn("Failed to parse cart storage:", e);
+      console.warn("Failed to load user cart:", e);
+      setItems([]);
     }
     setMounted(true);
-  }, []);
+  }, [isAuthenticated, storageKey]);
 
-  // Save cart to localStorage on changes
+  // Save cart to user-scoped storage whenever items change
   useEffect(() => {
-    if (mounted) {
-      localStorage.setItem("edvexa_cart", JSON.stringify(items));
+    if (mounted && isAuthenticated && storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(items));
     }
-  }, [items, mounted]);
+  }, [items, mounted, isAuthenticated, storageKey]);
 
   const addToCart = (product: Product, quantity = 1): boolean => {
+    // Security Guard: Prevent unauthenticated users from adding to cart
+    if (!isAuthenticated || !user) {
+      toast.error("🔒 Please sign in to add products to your cart!", {
+        id: "auth-cart-warning",
+        duration: 4000,
+      });
+      return false;
+    }
+
     if (!product || product.stock <= 0) {
       toast.error("This product is currently out of stock.");
       return false;
@@ -96,6 +120,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = (productId: string, newQty: number) => {
+    if (!isAuthenticated || !user) {
+      toast.error("🔒 Sign in required to modify your cart.");
+      return;
+    }
+
     if (newQty <= 0) {
       removeFromCart(productId);
       return;
@@ -119,14 +148,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFromCart = (productId: string) => {
+    if (!isAuthenticated || !user) return;
     setItems((prev) => prev.filter((item) => item.productId !== productId));
     toast.success("Item removed from cart");
   };
 
   const clearCart = () => {
     setItems([]);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("edvexa_cart");
+    if (typeof window !== "undefined" && storageKey) {
+      localStorage.removeItem(storageKey);
     }
   };
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Product } from "@/types";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 import {
   ArrowLeft,
@@ -27,6 +28,7 @@ export default function ProductDetailPage() {
   const id = params?.id as string;
   const router = useRouter();
   const { addToCart, items } = useCart();
+  const { isAuthenticated } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +93,14 @@ export default function ProductDetailPage() {
   const isOutOfStock = product.stock <= 0;
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      toast.error("🔒 Please sign in to add products to your cart!", {
+        id: "auth-cart-warning",
+        duration: 3500,
+      });
+      router.push(`/signin?redirect=/products/${id}`);
+      return;
+    }
     if (isOutOfStock) {
       toast.error("This product is currently out of stock.");
       return;
@@ -106,6 +116,14 @@ export default function ProductDetailPage() {
   };
 
   const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      toast.error("🔒 Please sign in to checkout!", {
+        id: "auth-cart-warning",
+        duration: 3500,
+      });
+      router.push(`/signin?redirect=/products/${id}`);
+      return;
+    }
     if (isOutOfStock) {
       toast.error("This product is currently out of stock.");
       return;

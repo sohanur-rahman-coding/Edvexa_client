@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   AlertCircle,
   SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export default function ProductsCatalogPage() {
@@ -27,6 +29,12 @@ export default function ProductsCatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
+
+  // Pagination States
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 8;
 
   // Fetch Categories on mount
   useEffect(() => {
@@ -43,7 +51,12 @@ export default function ProductsCatalogPage() {
     fetchCategories();
   }, []);
 
-  // Fetch Products whenever filters change
+  // Reset to page 1 on filter or search modification
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedCategory, inStockOnly, sortBy]);
+
+  // Fetch Products whenever filters or page change
   useEffect(() => {
     let isMounted = true;
     async function loadProducts() {
@@ -54,12 +67,15 @@ export default function ProductsCatalogPage() {
           category: selectedCategory !== "all" ? selectedCategory : undefined,
           inStock: inStockOnly ? "true" : undefined,
           sortBy,
-          limit: 50,
+          page,
+          limit,
         };
 
         const res = await api.products.getAll(params);
         if (isMounted && res?.success && res.data) {
           setProducts(res.data);
+          if (res.total !== undefined) setTotal(res.total);
+          if (res.totalPages !== undefined) setTotalPages(res.totalPages);
         }
       } catch (err) {
         console.error("Failed to load products:", err);
@@ -73,82 +89,84 @@ export default function ProductsCatalogPage() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [search, selectedCategory, inStockOnly, sortBy]);
+  }, [search, selectedCategory, inStockOnly, sortBy, page]);
 
   return (
     <div className="space-y-8 pb-16">
       {/* Header Breadcrumb & Title */}
-      <div className="border-b border-slate-200 pb-6">
-        <div className="flex items-center gap-2 text-xs text-slate-500 mb-2 font-medium">
-          <Link href="/" className="hover:text-emerald-700 transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <span className="text-emerald-700 font-bold">Product Catalog</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-2 font-medium">
+            <Link href="/" className="hover:text-emerald-700 transition-colors">
+              Home
+            </Link>
+            <span>/</span>
+            <span className="text-emerald-700 font-bold">Catalog</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Equipment & Product Catalog
+          </h1>
+          <p className="text-xs text-slate-500 mt-1 font-medium">
+            Browse our full catalog of 20 verified hardware products with real-time inventory synchronization.
+          </p>
         </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
-              All Products & Hardware
-            </h1>
-            <p className="text-sm text-slate-500 mt-1 max-w-xl font-medium">
-              Browse our inventory with real-time stock tracking and atomic reservation protection.
-            </p>
-          </div>
-          <div className="text-xs text-slate-700 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl self-start md:self-auto font-medium shadow-xs">
-            Showing <strong className="text-emerald-700">{products.length}</strong> items
-          </div>
+
+        {/* Live Catalog Metric Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 self-start sm:self-auto shadow-2xs">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          <span>{total > 0 ? `${total} Total Products` : "20 Products Seeded"}</span>
         </div>
       </div>
 
-      {/* Filter and Search Control Bar */}
-      <section className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-          {/* Search Box */}
+      {/* Control Bar: Search, Category Pills & Sort */}
+      <section id="catalog-controls" className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          {/* Search Input */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products by title, category, or specs..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-xs"
+              placeholder="Search by title, description or specs..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-xs"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer px-1.5 py-0.5 rounded bg-slate-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 Clear
               </button>
             )}
           </div>
 
-          {/* Controls: In-Stock Toggle & Sort */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* In-Stock Only Toggle */}
-            <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white cursor-pointer text-xs font-bold text-slate-700 hover:text-emerald-700 transition-colors select-none shadow-xs">
-              <input
-                type="checkbox"
-                checked={inStockOnly}
-                onChange={(e) => setInStockOnly(e.target.checked)}
-                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 bg-white h-3.5 w-3.5 cursor-pointer"
-              />
-              <span>In-Stock Only</span>
-            </label>
+          {/* Quick Filters: In Stock & Sorting */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setInStockOnly(!inStockOnly)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                inStockOnly
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-emerald-600/20"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              In Stock Only
+            </button>
 
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-xs">
-              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+            {/* Sort Select */}
+            <div className="relative inline-flex items-center">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent text-slate-700 focus:outline-none cursor-pointer"
+                className="pl-8 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-emerald-500 transition-all cursor-pointer shadow-2xs appearance-none"
               >
-                <option value="newest">Newest Additions</option>
+                <option value="newest">Sort: Newest</option>
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
-                <option value="stock_asc">Stock: Lowest First</option>
+                <option value="stock_asc">Stock: Low to High</option>
                 <option value="title_asc">Name: A to Z</option>
               </select>
             </div>
@@ -156,13 +174,13 @@ export default function ProductsCatalogPage() {
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <button
             onClick={() => setSelectedCategory("all")}
-            className={`px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs ${
               selectedCategory === "all"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-white text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200"
+                ? "bg-emerald-600 text-white shadow-emerald-600/20"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
             }`}
           >
             All Categories
@@ -171,10 +189,10 @@ export default function ProductsCatalogPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs ${
                 selectedCategory === cat
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-white text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200"
+                  ? "bg-emerald-600 text-white shadow-emerald-600/20"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
             >
               {cat}
@@ -200,11 +218,65 @@ export default function ProductsCatalogPage() {
             ))}
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-slate-200">
+                <p className="text-xs text-slate-500 font-medium">
+                  Showing <span className="font-bold text-slate-800">{(page - 1) * limit + 1}</span> to{" "}
+                  <span className="font-bold text-slate-800">{Math.min(page * limit, total)}</span> of{" "}
+                  <span className="font-bold text-slate-800">{total}</span> products
+                </p>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.max(1, p - 1));
+                      document.getElementById("catalog-controls")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    disabled={page === 1}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => {
+                        setPage(num);
+                        document.getElementById("catalog-controls")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        page === num
+                          ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-extrabold"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-xs"
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.min(totalPages, p + 1));
+                      document.getElementById("catalog-controls")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    disabled={page === totalPages}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
+                  >
+                    Next <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20 px-4 rounded-3xl border border-slate-200 bg-white shadow-xs">
             <Layers className="w-12 h-12 text-slate-400 mx-auto mb-3" />
