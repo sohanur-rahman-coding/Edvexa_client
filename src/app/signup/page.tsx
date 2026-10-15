@@ -4,16 +4,18 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import GoogleIcon from "@/components/GoogleIcon";
 import { ArrowRight, Lock, Mail, User, ShieldCheck, UserCircle, Eye, EyeOff } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { register, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { register, loginWithGoogle, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
@@ -27,6 +29,20 @@ export default function SignUpPage() {
     setLoading(true);
     const res = await register(name, email, password, role);
     setLoading(false);
+    if (res?.success && res.user) {
+      router.push(res.user.role === "admin" ? "/admin" : "/");
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setGoogleLoading(true);
+    const res = await loginWithGoogle({
+      email: "alex.google@gmail.com",
+      name: "Alex Smith",
+      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      googleId: "goog_demo_user",
+    });
+    setGoogleLoading(false);
     if (res?.success && res.user) {
       router.push(res.user.role === "admin" ? "/admin" : "/");
     }
@@ -47,6 +63,34 @@ export default function SignUpPage() {
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create account</h1>
           <p className="text-sm text-slate-500">Join Edvexa to start managing orders and inventory</p>
+        </div>
+
+        {/* Continue with Google */}
+        <button
+          type="button"
+          id="google-signup-btn"
+          onClick={handleGoogleSignUp}
+          disabled={loading || googleLoading}
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50/90 text-slate-700 text-sm font-semibold shadow-xs hover:shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+        >
+          {googleLoading ? (
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+              Connecting with Google...
+            </span>
+          ) : (
+            <>
+              <GoogleIcon className="w-5 h-5 flex-shrink-0" />
+              <span>Continue with Google</span>
+            </>
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-xs text-slate-400 font-medium">or register with email</span>
+          <div className="flex-1 h-px bg-slate-200" />
         </div>
 
         {/* Form */}

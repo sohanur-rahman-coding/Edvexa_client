@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import GoogleIcon from "@/components/GoogleIcon";
 import {
   ShieldCheck,
   User,
@@ -20,10 +21,11 @@ function SignInContent() {
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect") || "";
 
-  const { login, loginAsDemoAdmin, loginAsDemoCustomer, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { login, loginWithGoogle, loginAsDemoAdmin, loginAsDemoCustomer, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
@@ -44,6 +46,20 @@ function SignInContent() {
     const res = await login(email, password);
     setLoading(false);
     if (res?.success && res.user) router.push(resolveTarget(res.user));
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    const res = await loginWithGoogle({
+      email: "alex.google@gmail.com",
+      name: "Alex Smith",
+      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      googleId: "goog_demo_user",
+    });
+    setGoogleLoading(false);
+    if (res?.success && res.user) {
+      router.push(resolveTarget(res.user));
+    }
   };
 
   const handleDemoAdmin = async () => {
@@ -77,6 +93,27 @@ function SignInContent() {
           <p className="text-sm text-slate-500">Sign in to your Edvexa account</p>
         </div>
 
+        {/* Continue with Google */}
+        <button
+          type="button"
+          id="continue-with-google-btn"
+          onClick={handleGoogleSignIn}
+          disabled={loading || googleLoading}
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50/90 text-slate-700 text-sm font-semibold shadow-xs hover:shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+        >
+          {googleLoading ? (
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+              Connecting with Google...
+            </span>
+          ) : (
+            <>
+              <GoogleIcon className="w-5 h-5 flex-shrink-0" />
+              <span>Continue with Google</span>
+            </>
+          )}
+        </button>
+
         {/* Demo Quick Access */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200 shadow-sm">
           <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-2">
@@ -89,7 +126,7 @@ function SignInContent() {
               type="button"
               id="demo-admin-btn"
               onClick={handleDemoAdmin}
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
@@ -99,7 +136,7 @@ function SignInContent() {
               type="button"
               id="demo-customer-btn"
               onClick={handleDemoCustomer}
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-50 text-emerald-900 text-xs font-bold border border-emerald-200 hover:border-emerald-300 transition-all active:scale-95 disabled:opacity-50 cursor-pointer shadow-xs"
             >
               <User className="w-3.5 h-3.5 text-emerald-600" />
@@ -111,7 +148,7 @@ function SignInContent() {
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-xs text-slate-400 font-medium">or sign in manually</span>
+          <span className="text-xs text-slate-400 font-medium">or sign in with email</span>
           <div className="flex-1 h-px bg-slate-200" />
         </div>
 
