@@ -20,13 +20,25 @@ const nextConfig = {
       process.env.API_URL ||
       "http://localhost:5000";
     const cleanUrl = backendUrl.replace(/\/+$/, "").replace(/\/api$/, "");
+
+    // IMPORTANT: Better Auth and the Express backend both share the /api/auth/* prefix.
+    // - Express handles:  /api/auth/login, /api/auth/register, /api/auth/me, /api/auth/google
+    // - Better Auth handles: /api/auth/callback/*, /api/auth/sign-in/*, /api/auth/session, /api/auth/sign-out
+    //
+    // We CANNOT use a wildcard /api/auth/:path* rewrite because it intercepts Better Auth routes.
+    // Instead we explicitly enumerate only the Express routes that need proxying.
     return [
-      {
-        // Next.js internal API routes (/api/auth/[...all]) always take priority
-        // over rewrites, so /api/auth/* will correctly hit Better Auth, not Express.
-        source: "/api/:path*",
-        destination: `${cleanUrl}/api/:path*`,
-      },
+      // ── Express custom JWT auth routes ────────────────────────────────────────
+      { source: "/api/auth/login",    destination: `${cleanUrl}/api/auth/login` },
+      { source: "/api/auth/register", destination: `${cleanUrl}/api/auth/register` },
+      { source: "/api/auth/me",       destination: `${cleanUrl}/api/auth/me` },
+      { source: "/api/auth/google",   destination: `${cleanUrl}/api/auth/google` },
+      // ── All other Express API routes ──────────────────────────────────────────
+      { source: "/api/products/:path*",  destination: `${cleanUrl}/api/products/:path*` },
+      { source: "/api/inventory/:path*", destination: `${cleanUrl}/api/inventory/:path*` },
+      { source: "/api/orders/:path*",    destination: `${cleanUrl}/api/orders/:path*` },
+      // NOTE: /api/auth/callback/google, /api/auth/session, /api/auth/sign-in/social
+      // are NOT listed here — they are handled by the Next.js Better Auth route handler.
     ];
   },
 

@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ShieldCheck, Zap, Lock, Package, CreditCard, ArrowUpRight } from "lucide-react";
 
 export default function Footer() {
@@ -14,8 +15,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-black text-base shadow-md shadow-emerald-500/20">
-                E
+              <div className="relative w-9 h-9 rounded-xl overflow-hidden shadow-md shadow-emerald-500/20 flex-shrink-0">
+                <Image src="/Logo.jpg" alt="Edvexa Logo" fill className="object-cover" />
               </div>
               <span className="text-base font-extrabold text-slate-900 tracking-tight">Edvexa</span>
             </div>
