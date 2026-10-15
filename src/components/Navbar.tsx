@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import {
@@ -23,6 +23,7 @@ import {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated, isAdmin, loginAsDemoAdmin, loginAsDemoCustomer, logout } = useAuth();
   const { itemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -50,9 +51,24 @@ export default function Navbar() {
 
   const handleQuickRoleSwitch = async (role: "admin" | "customer") => {
     setSwitchingRole(true);
-    if (role === "admin") await loginAsDemoAdmin();
-    else await loginAsDemoCustomer();
-    setSwitchingRole(false);
+    try {
+      if (role === "admin") {
+        const res = await loginAsDemoAdmin();
+        if (res?.success) {
+          router.push("/admin");
+        }
+      } else {
+        const res = await loginAsDemoCustomer();
+        if (res?.success) {
+          // If on admin route, smoothly navigate to /orders or / to avoid admin route guard
+          if (pathname.startsWith("/admin")) {
+            router.push("/orders");
+          }
+        }
+      }
+    } finally {
+      setSwitchingRole(false);
+    }
   };
 
   const navLinks = [
@@ -79,28 +95,37 @@ export default function Navbar() {
             <span className="text-white/90 md:hidden font-medium text-[11px]">Edvexa Platform</span>
           </div>
 
-          {/* 1-Click Demo Switcher */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-[10px] text-white/70 hidden sm:inline">Demo:</span>
-            {isAdmin ? (
-              <button
-                onClick={() => handleQuickRoleSwitch("customer")}
-                disabled={switchingRole}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                <ArrowRightLeft className="w-3 h-3" />
-                Customer Mode 👤
-              </button>
-            ) : (
-              <button
-                onClick={() => handleQuickRoleSwitch("admin")}
-                disabled={switchingRole}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                <ShieldCheck className="w-3 h-3" />
-                Admin Mode 👑
-              </button>
-            )}
+          {/* 1-Click Demo Switcher - Allows instant switching between Customer & Admin */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10px] text-white/70 hidden sm:inline mr-1">Demo Login:</span>
+            <button
+              onClick={() => handleQuickRoleSwitch("customer")}
+              disabled={switchingRole}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
+                isAuthenticated && !isAdmin
+                  ? "bg-white text-emerald-800 shadow-xs border border-white"
+                  : "bg-white/15 hover:bg-white/25 text-white border border-white/20"
+              }`}
+              title="Switch to Demo Customer account"
+            >
+              <User className="w-3 h-3" />
+              Customer 👤
+              {isAuthenticated && !isAdmin && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+            </button>
+            <button
+              onClick={() => handleQuickRoleSwitch("admin")}
+              disabled={switchingRole}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
+                isAdmin
+                  ? "bg-white text-emerald-800 shadow-xs border border-white"
+                  : "bg-white/15 hover:bg-white/25 text-white border border-white/20"
+              }`}
+              title="Switch to Demo Administrator account"
+            >
+              <ShieldCheck className="w-3 h-3" />
+              Admin 👑
+              {isAdmin && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+            </button>
           </div>
         </div>
       </div>

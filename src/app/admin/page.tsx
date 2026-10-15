@@ -301,7 +301,10 @@ export default function AdminDashboardPage() {
         {[
           {
             label: "Inventory Value",
-            value: `$${inventoryStats?.totalInventoryValuation ? Number(inventoryStats.totalInventoryValuation).toLocaleString() : "0"}`,
+            value: `$${(
+              inventoryStats?.totalInventoryValuation ??
+              inventoryProducts.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.stock) || 0), 0)
+            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             sub: "Based on live stock",
             icon: DollarSign,
             iconBg: "bg-emerald-50 border-emerald-200",
@@ -310,8 +313,8 @@ export default function AdminDashboardPage() {
           },
           {
             label: "Catalog Products",
-            value: inventoryStats?.totalProducts || 0,
-            sub: `${inventoryStats?.totalStockUnits || 0} physical units`,
+            value: inventoryStats?.totalProducts || inventoryProducts.length,
+            sub: `${inventoryStats?.totalStockUnits || inventoryProducts.reduce((sum, p) => sum + (Number(p.stock) || 0), 0)} physical units`,
             icon: Layers,
             iconBg: "bg-teal-50 border-teal-200",
             iconColor: "text-teal-600",
