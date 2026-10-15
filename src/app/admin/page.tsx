@@ -157,12 +157,17 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleAdjustStock = async (productId: string, operation: "add" | "set" | "deduct", amount: number) => {
+  const handleAdjustStock = async (
+    productId: string,
+    operation: "add" | "set" | "deduct" | "increment" | "decrement",
+    amount: number
+  ) => {
     setAdjustingStockId(productId);
     try {
       const res = await api.inventory.adjustStock(productId, operation, amount);
       if (res?.success) {
-        toast.success(`Stock updated to ${res.data?.newStock} units`);
+        const updatedStock = res.data?.newStock ?? (res.data as any)?.stock;
+        toast.success(`Stock updated to ${updatedStock ?? "new"} units`);
         fetchData();
       }
     } catch (err: any) {
@@ -468,16 +473,16 @@ export default function AdminDashboardPage() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => handleAdjustStock(item.id, "add", 5)}
-                            disabled={adjustingStockId === item.id}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 transition-all cursor-pointer shadow-xs"
+                            onClick={() => handleAdjustStock(item.id || (item as any)._id, "increment", 5)}
+                            disabled={adjustingStockId === (item.id || (item as any)._id)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 transition-all cursor-pointer shadow-xs disabled:opacity-40"
                             title="Add 5 units to stock"
                           >
                             +5
                           </button>
                           <button
-                            onClick={() => handleAdjustStock(item.id, "deduct", 1)}
-                            disabled={adjustingStockId === item.id || item.stock <= 0}
+                            onClick={() => handleAdjustStock(item.id || (item as any)._id, "decrement", 1)}
+                            disabled={adjustingStockId === (item.id || (item as any)._id) || item.stock <= 0}
                             className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-200 transition-all cursor-pointer disabled:opacity-30 shadow-xs"
                             title="Deduct 1 unit from stock"
                           >

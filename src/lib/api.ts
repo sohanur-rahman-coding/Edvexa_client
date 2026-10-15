@@ -118,8 +118,12 @@ export const api = {
       request<Product[]>("/api/inventory") as Promise<
         ApiResponse<Product[]> & { stats: InventoryStats }
       >,
-    adjustStock: (productId: string, operation: "add" | "set" | "deduct", amount: number) =>
-      request<{ product: Product; previousStock: number; newStock: number }>(
+    adjustStock: (
+      productId: string,
+      operation: "add" | "set" | "deduct" | "increment" | "decrement",
+      amount: number
+    ) =>
+      request<{ product: Product; stock: number; newStock?: number }>(
         "/api/inventory/adjust",
         {
           method: "POST",
