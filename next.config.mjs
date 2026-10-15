@@ -22,9 +22,10 @@ const nextConfig = {
     const cleanUrl = backendUrl.replace(/\/+$/, "").replace(/\/api$/, "");
     return [
       {
-        // Forward all /api/* to Express EXCEPT /api/auth/* which is handled by Better Auth
-        source: "/api/((?!auth/).*)",
-        destination: `${cleanUrl}/api/$1`,
+        // Next.js internal API routes (/api/auth/[...all]) always take priority
+        // over rewrites, so /api/auth/* will correctly hit Better Auth, not Express.
+        source: "/api/:path*",
+        destination: `${cleanUrl}/api/:path*`,
       },
     ];
   },
