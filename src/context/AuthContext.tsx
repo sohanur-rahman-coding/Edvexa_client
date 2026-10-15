@@ -4,9 +4,8 @@
  * AuthContext - Edvexa Authentication State Manager (TypeScript)
  *
  * Manages JWT-based authentication:
- * - Stores JWT token in localStorage for API requests
- * - Sets/clears an `edvexa_auth_presence` cookie so Next.js middleware
- *   can protect server-side routes (middleware cannot read localStorage)
+ * - Stores JWT token and user profile in localStorage for instant retrieval across pages
+ * - Sets/clears an `edvexa_auth_presence` cookie
  * - Exposes user, role, and auth helpers to all child components
  */
 
@@ -33,10 +32,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 function setAuthCookie() {
-  document.cookie = "edvexa_auth_presence=1; path=/; max-age=604800; SameSite=Lax";
+  if (typeof document === "undefined") return;
+  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+  const secureFlag = isSecure ? "; Secure" : "";
+  document.cookie = `edvexa_auth_presence=1; path=/; max-age=2592000; SameSite=Lax${secureFlag}`;
 }
 
 function clearAuthCookie() {
+  if (typeof document === "undefined") return;
   document.cookie = "edvexa_auth_presence=; path=/; max-age=0; SameSite=Lax";
 }
 
@@ -47,22 +50,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const persistAuth = useCallback((jwtToken: string, userData: User) => {
     localStorage.setItem("edvexa_token", jwtToken);
+    localStorage.setItem("edvexa_user", JSON.stringify(userData));
     setToken(jwtToken);
     setUser(userData);
+    setLoading(false);
     setAuthCookie();
   }, []);
 
   const clearAuth = useCallback(() => {
     localStorage.removeItem("edvexa_token");
+    localStorage.removeItem("edvexa_user");
     setToken(null);
     setUser(null);
+    setLoading(false);
     clearAuthCookie();
   }, []);
 
   // Restore session from localStorage on mount
   useEffect(() => {
     async function restoreSession() {
+      if (typeof window === "undefined") return;
+
       const storedToken = localStorage.getItem("edvexa_token");
+      const storedUser = localStorage.getItem("edvexa_user");
 
       if (!storedToken) {
         clearAuthCookie();
@@ -70,21 +80,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Immediately restore state from localStorage so the user is never treated as logged out
       setToken(storedToken);
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          setUser(parsed);
+          setLoading(false);
+          setAuthCookie();
+        } catch (e) {
+          console.warn("Failed to parse cached user:", e);
+        }
+      }
+
+      // Verify token in background with backend
       try {
         const response = await api.auth.me();
         if (response?.success && response.data?.user) {
           setUser(response.data.user);
+          localStorage.setItem("edvexa_user", JSON.stringify(response.data.user));
           setAuthCookie();
         } else if (response?.success && (response as any).user) {
-          setUser((response as any).user);
+          const u = (response as any).user;
+          setUser(u);
+          localStorage.setItem("edvexa_user", JSON.stringify(u));
           setAuthCookie();
-        } else {
-          clearAuth();
         }
       } catch (err: any) {
-        console.warn("[AuthContext] Failed to restore session:", err.message);
-        clearAuth();
+        // ONLY clear auth if the server explicitly rejects the token with 401 or 403
+        // If it's a transient network timeout or cold start, keep the active session!
+        if (err?.status === 401 || err?.status === 403) {
+          console.warn("[AuthContext] Token expired or invalid:", err.message);
+          clearAuth();
+        } else {
+          console.warn("[AuthContext] Background token verification delayed, retaining session.");
+        }
       } finally {
         setLoading(false);
       }

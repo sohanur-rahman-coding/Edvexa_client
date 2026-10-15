@@ -49,7 +49,8 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated) {
+      const hasToken = typeof window !== "undefined" && !!localStorage.getItem("edvexa_token");
+      if (!isAuthenticated && !hasToken) {
         router.push("/signin?redirect=/orders");
       } else {
         fetchOrders();
