@@ -22,8 +22,9 @@ const nextConfig = {
     const cleanUrl = backendUrl.replace(/\/+$/, "").replace(/\/api$/, "");
     return [
       {
-        source: "/api/:path*",
-        destination: `${cleanUrl}/api/:path*`,
+        // Forward all /api/* to Express EXCEPT /api/auth/* which is handled by Better Auth
+        source: "/api/((?!auth/).*)",
+        destination: `${cleanUrl}/api/$1`,
       },
     ];
   },
@@ -34,6 +35,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
       },
     ],
   },

@@ -4,12 +4,13 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { authClient } from "@/lib/auth-client";
 import GoogleIcon from "@/components/GoogleIcon";
 import { ArrowRight, Lock, Mail, User, ShieldCheck, UserCircle, Eye, EyeOff } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { register, loginWithGoogle, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { register, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,16 +37,9 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = async () => {
     setGoogleLoading(true);
-    const res = await loginWithGoogle({
-      email: "alex.google@gmail.com",
-      name: "Alex Smith",
-      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-      googleId: "goog_demo_user",
-    });
+    // Redirects browser to Google — loading stays until page navigates away
+    await authClient.signIn.social({ provider: "google", callbackURL: "/auth/google-sync" });
     setGoogleLoading(false);
-    if (res?.success && res.user) {
-      router.push(res.user.role === "admin" ? "/admin" : "/");
-    }
   };
 
   if (authLoading) {

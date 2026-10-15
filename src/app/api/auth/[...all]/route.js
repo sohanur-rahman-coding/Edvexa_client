@@ -1,30 +1,14 @@
 /**
- * Edvexa - Auth API Route Handler (Stub)
+ * Edvexa - Better-Auth Next.js Route Handler
  *
- * NOTE: Edvexa uses a custom JWT system via the Express backend (port 5000).
- * This route exists as a stub to prevent 404 errors for any stale /api/auth requests.
- *
- * All real auth operations go through:
- *   POST http://localhost:5000/api/auth/login
- *   POST http://localhost:5000/api/auth/register
- *   POST http://localhost:5000/api/auth/google
- *   GET  http://localhost:5000/api/auth/me
+ * Handles all /api/auth/* routes including:
+ *   GET  /api/auth/callback/google  ← OAuth redirect from Google
+ *   POST /api/auth/sign-in/social
+ *   POST /api/auth/sign-out
+ *   GET  /api/auth/session
  */
 
-export async function GET() {
-  return Response.json({
-    success: false,
-    message:
-      "This route is not active. Edvexa uses a custom JWT backend at /api/auth/* via the Express server.",
-    docs: "See Edvexa-server/src/routes/authRoutes.js",
-  });
-}
+import { auth } from "@/lib/auth";
+import { toNextJsHandler } from "better-auth/next-js";
 
-export async function POST() {
-  return Response.json({
-    success: false,
-    message:
-      "This route is not active. Edvexa uses a custom JWT backend at /api/auth/* via the Express server.",
-    docs: "See Edvexa-server/src/routes/authRoutes.js",
-  });
-}
+export const { GET, POST } = toNextJsHandler(auth);

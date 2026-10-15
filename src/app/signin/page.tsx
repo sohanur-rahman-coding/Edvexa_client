@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { authClient } from "@/lib/auth-client";
 import GoogleIcon from "@/components/GoogleIcon";
 import {
   ShieldCheck,
@@ -21,7 +22,7 @@ function SignInContent() {
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect") || "";
 
-  const { login, loginWithGoogle, loginAsDemoAdmin, loginAsDemoCustomer, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { login, loginAsDemoAdmin, loginAsDemoCustomer, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,16 +51,15 @@ function SignInContent() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const res = await loginWithGoogle({
-      email: "alex.google@gmail.com",
-      name: "Alex Smith",
-      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-      googleId: "goog_demo_user",
-    });
+    // Build the callbackURL so google-sync can redirect back after JWT is minted
+    const callbackURL =
+      rawRedirect && !rawRedirect.startsWith("/admin") && rawRedirect !== "/signin"
+        ? `/auth/google-sync?redirect=${encodeURIComponent(rawRedirect)}`
+        : "/auth/google-sync";
+    // This redirects the browser to Google — loading spinner stays until navigation
+    await authClient.signIn.social({ provider: "google", callbackURL });
+    // If for some reason we land back here (e.g. popup blocked), reset spinner
     setGoogleLoading(false);
-    if (res?.success && res.user) {
-      router.push(resolveTarget(res.user));
-    }
   };
 
   const handleDemoAdmin = async () => {
