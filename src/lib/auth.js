@@ -13,8 +13,33 @@ import { MongoClient } from "mongodb";
 // Reuse a single MongoClient across invocations (Next.js module caching)
 const client = new MongoClient(process.env.MONGODB_URI);
 
+/**
+ * Auto-detect the app base URL:
+ * In production, always resolve to the live Vercel domain (edvexa-client.vercel.app)
+ * or VERCEL_URL, ignoring any accidental "localhost" settings.
+ * In local dev, falls back to http://localhost:3000.
+ */
+function getBaseURL() {
+  if (process.env.BETTER_AUTH_URL && !process.env.BETTER_AUTH_URL.includes("localhost")) {
+    return process.env.BETTER_AUTH_URL;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  if (process.env.NODE_ENV === "production") {
+    return "https://edvexa-client.vercel.app";
+  }
+  return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+}
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: getBaseURL(),
   secret: process.env.BETTER_AUTH_SECRET,
   database: mongodbAdapter(client.db()),
   socialProviders: {

@@ -137,8 +137,8 @@ export default function Navbar() {
 
           {/* Brand */}
           <Link href="/" className="flex items-center gap-3 group cursor-pointer flex-shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-emerald-500/25 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-all duration-200">
-              E
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-emerald-500/25 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-all duration-200 flex-shrink-0">
+              <Image src="/Logo.jpg" alt="Edvexa Logo" fill className="object-cover" priority />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
