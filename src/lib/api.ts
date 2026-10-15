@@ -5,8 +5,12 @@
 
 import { ApiResponse, Product, Order, User, InventoryStats, OrderStats } from "@/types";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const rawBase =
+  process.env.NEXT_PUBLIC_SERVER_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000";
+
+const API_BASE_URL = rawBase.replace(/\/+$/, "").replace(/\/api$/, "");
 
 function getAuthHeader(): Record<string, string> {
   if (typeof window === "undefined") return {};
