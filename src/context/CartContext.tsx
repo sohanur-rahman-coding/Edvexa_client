@@ -1,12 +1,27 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { Product, CartItem } from "@/types";
 import { toast } from "react-hot-toast";
 
-const CartContext = createContext(null);
+interface CartContextItem extends CartItem {
+  maxStock?: number;
+}
 
-export function CartProvider({ children }) {
-  const [items, setItems] = useState([]);
+interface CartContextType {
+  items: CartContextItem[];
+  itemCount: number;
+  subtotal: number;
+  addToCart: (product: Product, quantity?: number) => boolean;
+  updateQuantity: (productId: string, newQty: number) => void;
+  removeFromCart: (productId: string) => void;
+  clearCart: () => void;
+}
+
+const CartContext = createContext<CartContextType | null>(null);
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = useState<CartContextItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
   // Restore cart from localStorage on mount
@@ -29,7 +44,7 @@ export function CartProvider({ children }) {
     }
   }, [items, mounted]);
 
-  const addToCart = (product, quantity = 1) => {
+  const addToCart = (product: Product, quantity = 1): boolean => {
     if (!product || product.stock <= 0) {
       toast.error("This product is currently out of stock.");
       return false;
@@ -80,7 +95,7 @@ export function CartProvider({ children }) {
     return true;
   };
 
-  const updateQuantity = (productId, newQty) => {
+  const updateQuantity = (productId: string, newQty: number) => {
     if (newQty <= 0) {
       removeFromCart(productId);
       return;
@@ -89,11 +104,12 @@ export function CartProvider({ children }) {
     setItems((prev) =>
       prev.map((item) => {
         if (item.productId === productId) {
-          if (newQty > item.maxStock) {
+          const max = item.maxStock !== undefined ? item.maxStock : 999;
+          if (newQty > max) {
             toast.error(
-              `Maximum available stock reached (${item.maxStock} units).`
+              `Maximum available stock reached (${max} units).`
             );
-            return { ...item, quantity: item.maxStock };
+            return { ...item, quantity: max };
           }
           return { ...item, quantity: newQty };
         }
@@ -102,7 +118,7 @@ export function CartProvider({ children }) {
     );
   };
 
-  const removeFromCart = (productId) => {
+  const removeFromCart = (productId: string) => {
     setItems((prev) => prev.filter((item) => item.productId !== productId));
     toast.success("Item removed from cart");
   };
@@ -120,7 +136,7 @@ export function CartProvider({ children }) {
     0
   );
 
-  const value = {
+  const value: CartContextType = {
     items,
     itemCount,
     subtotal: Math.round(subtotal * 100) / 100,
